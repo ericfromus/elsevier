@@ -1,0 +1,75 @@
+<head>
+    <title>Hello Patient</title>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" href="tabulator/dist/css/tabulator.css">
+</head>
+
+<body>
+    <h1>This is the Hello Patient Browser</h1>
+    <div>
+        <input type="text" id="naming"  />
+        <button value="lookup">Search Patients</button>
+    </div>
+    <div id="patientInfo">
+        
+    </div>
+</body>
+
+<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+<script src="patientInfo.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script type="text/javascript" src="tabulator/dist/js/tabulator.js"></script>
+
+<script>
+// Data Request
+let data = {}
+let lookupurl = "https://fhir-open.sandboxcerner.com/dstu2/0b8a0111-e8e6-4c26-a91c-5069cbc6b1ca/Patient?name="
+
+$('button').click(doLookup);
+
+function doLookup() {
+    var patientname = $("#naming").val();
+    var patientQuery = lookupurl + patientname;
+    var FHIRquery = new XMLHttpRequest();
+    FHIRquery.open('GET',patientQuery, true)
+    FHIRquery.onload = function() {
+        data = JSON.parse(FHIRquery.responseText)
+        $('#patientInfo').html("");
+        //console.log(data)
+        if (data.entry) {
+            for (i = 0; i < data.entry.length; i++) {
+                counter = 1+i
+                var name = data.entry[i].resource.name[0].given + ' ' + data.entry[i].resource.name[0].family
+                var gender = data.entry[i].resource.gender
+                var dob = data.entry[i].resource.birthDate
+                var tableName = `${data.entry[i].resource.name[0].given}${data.entry[i].resource.name[0].family}${i}`.toLowerCase().replace(/,|'| /g,'');
+                
+                
+                $('#patientInfo').append(`<div>No. ${counter} <p id='name'> ${name}</p>\n <p id='gender'> ${gender}</p>\n<p id='dob'>${dob}</p><div id="${tableName}"></div></div>` )
+                var surname = [{id:1, name: name}];
+                
+                var activeConditions = new Tabulator(`#${tableName}`, {
+                    data: surname,
+                    height:"300px",
+                    layout:"fitColumns",
+                    columns:[
+                        {title:"Name", field:"name", sortable: true, width: 200},
+                    ]
+                });
+                //$('#name').html(data.entry[key].resource.name[0].given)
+            } 
+        } else {
+            $('#patientInfo').append(`<div><p>No ${patientname}'s Found</p></div>`);
+        }
+    }
+    FHIRquery.setRequestHeader("Accept", "application/json+fhir")
+    FHIRquery.send()
+}
+
+
+
+
+
+</script>
